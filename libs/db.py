@@ -47,32 +47,40 @@ def insert(data, **kwargs):
     :return: * bool: is execution success or not
     """
     if type(data) == dict:
+        for name, arg in kwargs.items():
+            if name == 'dbcon':
+                con = arg
+        query = __querybuilder(type=Qtype.C, data=data)
+
+        result = execute(query)
+
+
+def update(id, data, **kwargs):
+    pass
+
+
+def delete(data, **kwargs):
+    pass
+
+
+def get(id, table, **kwargs):
+    pass
+
+
+def execute(query, **kwargs):
+    result = None
+    if type(query) == str:
         con = connect()
         for name, arg in kwargs.items():
             if name == 'dbcon':
                 con = arg
 
         cur = con.cursor()
-        query = __querybuilder(type=Qtype.C, data=data)
         cur.execute(query)
 
         con.close()
 
-
-def update():
-    pass
-
-
-def delete():
-    pass
-
-
-def get():
-    pass
-
-
-def execute():
-    pass
+    return result
 
 
 def __querybuilder(**kwargs):
