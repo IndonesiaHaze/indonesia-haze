@@ -5,7 +5,6 @@ import MySQLdb
 import config
 
 
-
 configuration = config.get()
 defaultdb = configuration.get('default').get('db')
 
@@ -47,12 +46,10 @@ def insert(data, **kwargs):
     :return: * bool: is execution success or not
     """
     if type(data) == dict:
-        for name, arg in kwargs.items():
-            if name == 'dbcon':
-                con = arg
         query = __querybuilder(type=Qtype.C, data=data)
+        result = execute(query, **kwargs)
 
-        result = execute(query)
+        # result.fetchall()
 
 
 def update(id, data, **kwargs):
@@ -68,7 +65,6 @@ def get(id, table, **kwargs):
 
 
 def execute(query, **kwargs):
-    result = None
     if type(query) == str:
         con = connect()
         for name, arg in kwargs.items():
@@ -77,12 +73,24 @@ def execute(query, **kwargs):
 
         cur = con.cursor()
         cur.execute(query)
-
         con.close()
 
-    return result
+    return cur
 
 
 def __querybuilder(**kwargs):
+    qtype = None
+    data = None
     query = ""
+
+    for name, arg in kwargs.items():
+        if name == 'type':
+            qtype = arg
+        elif name == 'data':
+            data = arg
+
+    if qtype is not None and data is not None:
+        if qtype == Qtype.C:
+            query = "INSERT INTO "++""
+
     return query
