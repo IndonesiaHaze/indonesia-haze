@@ -5,3 +5,6 @@ port=port
 username=username
 password=password
 database=IDHAZE
+
+[default]
+db=coredb
