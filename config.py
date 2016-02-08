@@ -5,7 +5,9 @@ import io
 
 
 def get():
-    # Load the configuration file
+    """Get configuration file from config.ini
+    :return: configuration in dictionary
+    """
     with open("..\\config.ini") as f:
         configs = f.read()
 
@@ -18,7 +20,7 @@ def get():
     for section in config.sections():
         conf = dict()
         for options in config.options(section):
-            conf[options] = config.get(section, options)
-        confs[section] = conf
+            conf.update(options, config.get(section, options))
+        confs.update(section, conf)
 
     return confs
