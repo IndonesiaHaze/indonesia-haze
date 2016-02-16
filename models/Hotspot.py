@@ -18,7 +18,3 @@ class Hotspot():
 
     def __pk__(self):
         return ['HotspotID']
-
-
-query = "INSERT INTO "
-print type(query).__name__

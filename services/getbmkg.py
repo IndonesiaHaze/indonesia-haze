@@ -1,7 +1,9 @@
-from helper import api
+from helpers import api
+
 
 class Downloader:
     URL = 'http://202.90.198.22/IMAGE/HOTSPOT/%s/%s/hotspot_%s.txt'
+
     def __init__(self, builder):
         self.year = builder.y
         self.month = builder.m
@@ -40,7 +42,7 @@ class Downloader:
         return self
 
     def download(self):
-        data = api.getDataBmkg(Downloader.URL)
+        data = api.get(Downloader.URL)
         hotspot = self.parse(data)
         print hotspot
 

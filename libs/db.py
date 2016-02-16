@@ -1,9 +1,8 @@
 __author__ = "brlnt-super"
 
 from enum import Enum
-import MySQLdb
 
-import config
+from dbc import DbConnection
 
 
 class Qtype(Enum):
@@ -15,68 +14,46 @@ class Qtype(Enum):
     Custom = None
 
 
-class DbConnection():
-    def __init__(self):
-        self.configuration = config.get()
-        self.defaultdb = self.configuration.get("default").get("db")
-        pass
-
-    def connect(self, isfirst=False):
-        """Establish mysql connection
-        :param isfirst: true if first install, false if its not
-        :return: MySQL connection
-        """
-        if isfirst:
-            return MySQLdb.connect(
-                host=self.configuration.get(self.defaultdb).get("host"),
-                port=self.configuration.get(self.defaultdb).get("port"),
-                user=self.configuration.get(self.defaultdb).get("username"),
-                passwd=self.configuration.get(self.defaultdb).get("password")
-            )
-
-        return MySQLdb.connect(
-            host=self.configuration.get(self.defaultdb).get("host"),
-            port=self.configuration.get(self.defaultdb).get("port"),
-            user=self.configuration.get(self.defaultdb).get("username"),
-            passwd=self.configuration.get(self.defaultdb).get("password"),
-            db=self.configuration.get(self.defaultdb).get("database")
-        )
-
-
 class DbTransaction():
-    def __init__(self):
-        pass
-
-    def tran(self, data=None, qtype=Qtype.Custom, dbcon=DbConnection().connect()):
-        """interface for processing data
+    def __init__(self, data=None, qtype=Qtype.Custom, dbcon=None, query=None):
+        """
         :param data:
         :param qtype:
         :param dbcon:
         :return:
         """
-        if type(data).__name__ == "instance":
-            # Make sure the data is an instance of object
-            query = self._querybuilder(qtype=qtype, data=data)
-            result = self.execute(query=query, qtype=qtype, dbcon=dbcon)
-            return result
+        self.data = data
+        self.qtype = qtype
+        self.dbcon = dbcon
+        self.query = query
+        self.result = None
 
-        return None
-
-    def execute(self, query, qtype, dbcon):
-        """Execute query from defined one
-        :param query: executable string query for sql
-        :param dbcon: database connection (MySQLdb)
-        :return: cursor object
+    def tran(self):
         """
 
-        if type(query).__name__ == 'str' \
-                and qtype is not None \
-                and dbcon is not None:
-            con = dbcon
-            cur = con.cursor()
-            cur.execute(query)
+        :return:
+        """
+        self.query = self._querybuilder()
+        self.result = self.execute()
 
-            if qtype != Qtype.R:
+        return self.result
+
+    def execute(self):
+        """Execute query from defined one
+        :return: cursor object
+        """
+        if self.dbcon is None:
+            self.dbcon = DbConnection().connect()
+
+        if type(self.query).__name__ == 'str' \
+                and self.query is not None \
+                and self.qtype is not None \
+                and self.dbcon is not None:
+            con = self.dbcon
+            cur = con.cursor()
+            cur.execute(self.query)
+
+            if self.qtype != Qtype.R:
                 con.commit()
 
             con.close()
@@ -84,29 +61,26 @@ class DbTransaction():
 
         return None
 
-    def _querybuilder(self, qtype, data):
+    def _querybuilder(self):
         """Return the query string from the object model
         and desirable query type (C, R, U, D, Custom)
-        :param qtype: query type
-        :param data: object model
         :return: query string
         """
-        query = ""
-
-        if qtype is not None and data is not None:
-            cls = data.__class__
+        query = None
+        if self.qtype is not None and self.data is not None:
+            cls = self.data.__class__
             clsname = cls.__name__
 
-            if qtype == Qtype.C:
+            if self.qtype == Qtype.C:
                 # query insert
-                query = self._qry_insert(cls, clsname)
-            elif qtype == Qtype.R:
+                query = self._qry_insert(self.data, clsname)
+            elif self.qtype == Qtype.R:
                 pass
-            elif qtype == Qtype.U:
+            elif self.qtype == Qtype.U:
                 pass
-            elif qtype == Qtype.D:
+            elif self.qtype == Qtype.D:
                 pass
-            elif qtype == Qtype.Custom:
+            elif self.qtype == Qtype.Custom:
                 pass
 
         return query
@@ -117,12 +91,12 @@ class DbTransaction():
         :param clsname: class name
         :return: query string
         """
-        query = ""
+        query = None
         obj = self._getfields(cls.__dict__)
 
         if len(obj) != 0:
             # object not empty
-            query = "INSERT INTO "+clsname+" SET "
+            query = "INSERT INTO "+clsname+" SET"
             for i, field in enumerate(obj):
                 tqry = " %s = '%s'"
                 query += tqry % (field, obj[field])
@@ -154,9 +128,9 @@ class DbTransaction():
 def insert(**kwargs):
     """Insert data to database
     :param kwargs:
-    :return:
+    :return: cursor or None
     """
-    return DbTransaction().tran(qtype=Qtype.C, **kwargs)
+    return DbTransaction(qtype=Qtype.C, **kwargs).tran()
 
 
 def update(**kwargs):
